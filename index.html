@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تطبيق اللعبة</title>
+    <link rel="stylesheet" href="styles/styles.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet" />
+</head>
+<body>
+    <div class="background-container"></div>
+    <div class="content-wrapper">
+        <h1 class="main-title">لعبة كاذب أم لا؟ 🤔</h1>
+        <div class="container">
+
+            <div id="auth-screen" class="screen">
+                <h2 class="text-2xl font-bold mb-4 text-white">تسجيل الدخول / إنشاء حساب</h2>
+                <div id="auth-buttons-initial">
+                    <button id="show-login-btn" class="btn mt-4">تسجيل الدخول</button>
+                    <button id="show-signup-btn" class="btn btn-secondary mt-2">إنشاء حساب</button>
+                </div>
+                <div id="error-message"></div>
+                <div id="status-box"></div>
+            </div>
+
+            <div id="login-form" class="screen hidden">
+                <h3 class="text-xl font-bold mb-2 text-white">تسجيل الدخول</h3>
+                <input type="email" id="email-input-login" class="input-field" placeholder="البريد الإلكتروني" required>
+                <input type="password" id="password-input-login" class="input-field" placeholder="كلمة المرور" required>
+                <button id="login-btn" class="btn mt-4">
+                    تسجيل الدخول
+                    <div id="login-spinner" class="spinner hidden"></div>
+                </button>
+                <button id="back-to-auth-btn-1" class="btn btn-secondary mt-2">عودة</button>
+            </div>
+
+            <div id="signup-form" class="screen hidden">
+                <h3 class="text-xl font-bold mb-2 text-white">إنشاء حساب جديد</h3>
+                <input type="text" id="username-input-signup" class="input-field" placeholder="اسم المستخدم" required>
+                <input type="email" id="email-input-signup" class="input-field" placeholder="البريد الإلكتروني" required>
+                <input type="password" id="password-input-signup" class="input-field" placeholder="كلمة المرور" required>
+                <button id="signup-btn" class="btn mt-4">
+                    إنشاء حساب
+                    <div id="signup-spinner" class="spinner hidden"></div>
+                </button>
+                <button id="back-to-auth-btn-2" class="btn btn-secondary mt-2">عودة</button>
+            </div>
+
+            <div id="main-menu-screen" class="screen hidden">
+                <h2 class="text-2xl font-bold mb-4 text-white">القائمة الرئيسية</h2>
+                <button id="profile-btn" class="btn">الملف الشخصي</button>
+                <button id="create-group-btn" class="btn">إنشاء جروب</button>
+                <button id="join-group-btn" class="btn">الانضمام لجروب</button>
+                <button id="games-btn" class="btn">الألعاب</button>
+            </div>
+
+            <div id="profile-screen" class="screen hidden">
+                <h2 class="text-2xl font-bold mb-4 text-white">ملفي الشخصي</h2>
+                <p class="text-gray-200">اسم المستخدم: <span id="profile-name" class="font-semibold text-white"></span></p>
+                <p class="text-gray-200">النقاط: <span id="profile-points" class="font-semibold text-white"></span></p>
+                <button id="logout-btn" class="btn mt-4">تسجيل الخروج</button>
+                <button id="back-to-main-menu-1" class="btn btn-secondary back-btn">عودة</button>
+            </div>
+
+            <div id="create-group-screen" class="screen hidden">
+                <h2 class="text-2xl font-bold mb-4 text-white">إنشاء جروب جديد</h2>
+                <input type="text" id="group-name-input" class="input-field" placeholder="اسم الجروب" required>
+                <button id="create-group-btn-final" class="btn">
+                    إنشاء
+                    <div id="create-group-spinner" class="spinner hidden"></div>
+                </button>
+                <button id="back-to-main-menu-2" class="btn btn-secondary back-btn">عودة</button>
+            </div>
+
+            <div id="join-group-screen" class="screen hidden">
+                <h2 class="text-2xl font-bold mb-4 text-white">الانضمام لجروب</h2>
+                <input type="text" id="group-code-input" class="input-field" placeholder="رمز الجروب" required>
+                <button id="join-group-btn-final" class="btn">
+                    انضمام
+                    <div id="join-group-spinner" class="spinner hidden"></div>
+                </button>
+                <button id="back-to-main-menu-3" class="btn btn-secondary back-btn">عودة</button>
+            </div>
+
+            <div id="group-details-screen" class="screen hidden">
+                <h2 class="text-2xl font-bold mb-4 text-white">تفاصيل الجروب</h2>
+                <p class="text-lg text-gray-200">اسم الجروب: <span id="group-name" class="font-semibold text-white"></span></p>
+                
+                <div class="copy-container">
+                    <span id="group-code" class="group-code-text"></span>
+                    <button id="copy-btn">نسخ الرمز</button>
+                </div>
+                <span id="copy-status">تم النسخ!</span>
+
+                <h3 class="text-xl font-bold mt-4 text-white">اللاعبون:</h3>
+                <ul id="players-list" class="list-disc list-inside mt-2 text-gray-200"></ul>
+                
+                <p class="text-center mb-4 text-sm text-gray-400">يجب أن ينضم 4 لاعبين أو أكثر لبدء اللعبة.</p>
+                
+                <button id="start-game-btn" class="btn mt-4 hidden" disabled>
+                    ابدأ اللعبة
+                    <div id="start-game-spinner" class="spinner hidden"></div>
+                </button>
+                <p id="creator-message" class="text-sm text-red-500 mt-2 hidden">فقط مالك المجموعة يمكنه بدء اللعبة.</p>
+                
+                <button id="exit-group-btn" class="btn btn-danger hidden">الخروج</button>
+                <button id="leave-group-btn" class="btn btn-secondary hidden">ترك الجروب</button>
+            </div>
+            
+            <div id="confirm-modal" class="modal-overlay hidden">
+                <div class="modal-content">
+                    <h3 class="modal-title">تأكيد الخروج</h3>
+                    <p class="modal-message">هل تريد الخروج وحذف الكروب بالكامل؟</p>
+                    <div class="modal-actions">
+                        <button id="confirm-yes" class="btn btn-danger">نعم</button>
+                        <button id="confirm-no" class="btn btn-secondary">لا</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="ask-screen" class="screen hidden">
+                <h2 class="text-2xl font-bold mb-4 text-white">دورك! 🥳</h2>
+                <div class="timer-display mt-4">
+                    <span id="ask-timer"></span>
+                </div>
+                <p class="text-lg mb-2 text-gray-200">الجولة <span id="current-round" class="font-semibold text-white">1</span> من 5</p>
+                <p class="text-center mb-4 text-gray-300">اطرح سؤالًا على باقي اللاعبين.</p>
+                <textarea id="question-input" class="input-field h-32" placeholder="اكتب سؤالًا هنا..."></textarea>
+                <button id="submit-question-btn" class="btn mt-4">
+                    اطرح السؤال
+                    <div id="submit-question-spinner" class="spinner hidden"></div>
+                </button>
+            </div>
+
+            <div id="waiting-screen" class="screen hidden">
+                <h2 class="text-2xl font-bold mb-4 text-white">انتظار... ⏳</h2>
+                <p class="text-lg mb-2 text-gray-200">الجولة <span id="waiting-round" class="font-semibold text-white">1</span> من 5</p>
+                <p class="text-center text-gray-300">اللاعب <span id="waiting-player-name" class="font-bold text-white"></span> يطرح سؤاله.</p>
+                <p id="voting-status-waiting" class="text-md font-semibold mt-4 text-gray-200"></p>
+                <div class="timer-display mt-4 hidden">
+                    <span id="waiting-timer"></span>
+                </div>
+            </div>
+
+            <div id="voting-screen" class="screen hidden">
+                <h2 class="text-2xl font-bold mb-4 text-white">صوت!</h2>
+                <div class="timer-display mt-4">
+                    <span id="voting-timer"></span>
+                </div>
+                <p class="text-lg mb-2 text-gray-200">الجولة <span id="voting-round" class="font-semibold text-white">1</span> من 5</p>
+                <p id="voting-question" class="text-xl font-bold mb-4 text-white"></p>
+                <div id="voting-container" class="w-full space-y-2"></div>
+                <p id="vote-status" class="text-green-400 mt-2"></p>
+                <p id="voting-status-voting" class="text-md font-semibold mt-4 text-gray-200"></p>
+            </div>
+
+            <div id="summary-screen" class="screen hidden">
+                <h2 class="text-2xl font-bold mb-4 text-white">نتائج اللعبة النهائية! 🎉</h2>
+                <div id="summary-container" class="w-full"></div>
+                <button id="show-stats-btn" class="btn mt-4">إحصاءات</button>
+                <button id="end-game-btn" class="btn btn-secondary back-btn mt-2">إنهاء اللعبة</button>
+            </div>
+
+            <div id="statistics-screen" class="screen hidden">
+                <h2 class="text-2xl font-bold mb-4 text-white">إحصاءات اللاعبين</h2>
+                <div id="statistics-container" class="w-full"></div>
+                <button id="back-to-summary-btn" class="btn btn-secondary back-btn mt-4">عودة</button>
+            </div>
+
+            <div id="games-screen" class="screen hidden">
+                <h2 class="text-2xl font-bold mb-4 text-white">الألعاب</h2>
+                <button id="game-1-btn" class="btn game-btn">لعبة الذاكرة</button>
+                <button class="btn game-btn" data-game="2">اللعبة 2</button>
+                <button class="btn game-btn" data-game="3">اللعبة 3</button>
+                <button class="btn game-btn" data-game="4">اللعبة 4</button>
+                <button id="back-to-main-menu-from-games" class="btn btn-secondary back-btn">عودة</button>
+            </div>
+
+            <div id="game-1-screen" class="screen hidden">
+                <h2 class="text-2xl font-bold mb-4 text-white">لعبة الذاكرة</h2>
+                <div class="game-container">
+                    <div class="game-info">
+                        <div class="info-item">
+                            <span class="label">الحركات:</span>
+                            <span id="moves" class="value">0</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="label">كشف:</span>
+                            <span id="revealed" class="value">0/2</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="label">الوقت:</span>
+                            <span id="time" class="value">0s</span>
+                        </div>
+                    </div>
+                    <div id="board" class="board"></div>
+                    <div class="game-controls">
+                        <button id="restartBtn" class="btn btn-sm">إعادة التشغيل</button>
+                        <select id="modeSelect" class="select-field">
+                            <option value="3x3">3x3</option>
+                            <option value="4x4">4x4</option>
+                        </select>
+                    </div>
+                </div>
+                <div id="winBox" class="win-box hidden">
+                    <p class="win-message">فزت!</p>
+                    <p>الحركات: <span id="winMoves"></span></p>
+                    <p>الوقت: <span id="winTime"></span></p>
+                    <button id="closeWinBox" class="btn btn-secondary btn-sm mt-2">موافق</button>
+                </div>
+                <button class="btn btn-secondary back-to-games-btn mt-4">عودة للألعاب</button>
+            </div>
+
+            <div id="game-2-screen" class="screen hidden">
+                <h2 class="text-2xl font-bold mb-4 text-white">اللعبة 2</h2>
+                <p class="text-lg text-gray-200">سنضيف اللعبة لاحقاً.</p>
+                <button class="btn back-to-games-btn">عودة للألعاب</button>
+            </div>
+
+            <div id="game-3-screen" class="screen hidden">
+                <h2 class="text-2xl font-bold mb-4 text-white">اللعبة 3</h2>
+                <p class="text-lg text-gray-200">سنضيف اللعبة لاحقاً.</p>
+                <button class="btn back-to-games-btn">عودة للألعاب</button>
+            </div>
+
+            <div id="game-4-screen" class="screen hidden">
+                <h2 class="text-2xl font-bold mb-4 text-white">اللعبة 4</h2>
+                <p class="text-lg text-gray-200">سنضيف اللعبة لاحقاً.</p>
+                <button class="btn back-to-games-btn">عودة للألعاب</button>
+            </div>
+        </div>
+    </div>
+    <script type="module" src="scripts/app.js"></script>
+</body>
+</html>
