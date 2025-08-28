@@ -1,6 +1,6 @@
 // Firebase SDKs
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, updateProfile } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 import { getFirestore, doc, setDoc, getDoc, updateDoc, collection, onSnapshot, getDocs, query, where, arrayUnion, deleteDoc, arrayRemove } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
 // Firebase configuration
@@ -529,9 +529,11 @@ async function signup() {
     try {
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
         const user = userCredential.user;
+        await updateProfile(user, { displayName: username });
         const userRef = doc(db, `users`, user.uid);
         await setDoc(userRef, { username: username, points: 0, uid: user.uid });
         hideLoading('signup-btn', 'signup-spinner');
+        showScreen('main-menu-screen');
     } catch (error) {
         console.error("Error signing up:", error);
         showMessage('error-message', `فشل إنشاء الحساب: ${error.message}`, 'error');
@@ -560,6 +562,10 @@ async function login() {
 }
 
 async function logout() {
+    const user = auth.currentUser;
+    if (user) {
+        await updateDoc(doc(db, `users`, user.uid), { currentGroupId: null });
+    }
     await signOut(auth);
     showScreen('auth-screen');
 }
@@ -596,8 +602,8 @@ async function createGroup() {
 
         currentGroupId = groupCode;
         startGroupListener(currentGroupId);
+        await updateDoc(userRef, { currentGroupId: groupCode });
         
-        // Update the UI directly after creating the group
         document.getElementById('group-name').textContent = groupName;
         document.getElementById('group-code').textContent = groupCode;
         showScreen('group-details-screen');
@@ -644,7 +650,7 @@ async function joinGroup() {
         if (groupData.players.some(p => p.id === user.uid)) {
             currentGroupId = groupCode;
             startGroupListener(currentGroupId);
-            // Update the UI directly when rejoining a group
+            await updateDoc(doc(db, `users`, user.uid), { currentGroupId: groupCode });
             document.getElementById('group-name').textContent = groupData.groupName;
             document.getElementById('group-code').textContent = groupCode;
             showScreen('group-details-screen');
@@ -659,11 +665,11 @@ async function joinGroup() {
         await updateDoc(groupRef, {
             players: arrayUnion({ id: user.uid, name: username, score: 0 })
         });
-
+        
         currentGroupId = groupCode;
         startGroupListener(currentGroupId);
-        
-        // Update the UI directly after joining a group
+        await updateDoc(doc(db, `users`, user.uid), { currentGroupId: groupCode });
+
         document.getElementById('group-name').textContent = groupData.groupName;
         document.getElementById('group-code').textContent = groupCode;
         showScreen('group-details-screen');
@@ -960,10 +966,26 @@ if (game1WinBoxCloseBtn) {
   });
 }
 
-auth.onAuthStateChanged(user => {
+auth.onAuthStateChanged(async user => {
     if (user) {
-        showScreen('main-menu-screen');
-        // Initial profile data load
+        const userRef = doc(db, `users`, user.uid);
+        const userSnap = await getDoc(userRef);
+        if (userSnap.exists() && userSnap.data().currentGroupId) {
+            currentGroupId = userSnap.data().currentGroupId;
+            // تأكد من وجود الجروب قبل الدخول إليه
+            const groupRef = doc(db, `groups`, currentGroupId);
+            const groupSnap = await getDoc(groupRef);
+            if(groupSnap.exists()){
+                document.getElementById('group-name').textContent = groupSnap.data().groupName;
+                document.getElementById('group-code').textContent = currentGroupId;
+                showScreen('group-details-screen');
+                startGroupListener(currentGroupId);
+            } else {
+                showScreen('main-menu-screen');
+            }
+        } else {
+            showScreen('main-menu-screen');
+        }
         updateProfileScreen();
     } else {
         showScreen('auth-screen');
