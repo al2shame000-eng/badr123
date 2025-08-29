@@ -192,7 +192,7 @@ function handleGameStateChange() {
     const creatorMessage = document.getElementById('creator-message');
     const playerCountSpan = document.getElementById('player-count');
 
-    // End game if less than 3 players
+    // End game if less than 3 players AND the game has already started
     if (groupData.gameStatus !== 'waiting' && groupData.gameStatus !== 'pre-game' && groupData.players.length < 3) {
         updateDoc(doc(db, 'groups', currentGroupId), {
             gameStatus: 'summary'
