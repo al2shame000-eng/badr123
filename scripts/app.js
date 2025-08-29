@@ -254,8 +254,7 @@ function handleGameStateChange() {
                 showScreen('ask-screen');
                 startTimer('ask-timer', () => submitQuestion('auto'));
             } else {
-                const currentPlayerName = groupData.players.find(p => p.id === groupData.currentPlayerId)?.name;
-                document.getElementById('waiting-player-name').textContent = currentPlayerName || 'لاعب غير معروف';
+                document.getElementById('waiting-player-name').textContent = 'شخص ما يطرح السؤال';
                 showScreen('waiting-screen');
             }
             break;
