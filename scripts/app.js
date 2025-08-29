@@ -193,7 +193,7 @@ function handleGameStateChange() {
     const playerCountSpan = document.getElementById('player-count');
 
     // End game if less than 3 players
-    if (groupData.gameStatus !== 'waiting' && groupData.players.length < 3) {
+    if (groupData.gameStatus !== 'waiting' && groupData.gameStatus !== 'pre-game' && groupData.players.length < 3) {
         updateDoc(doc(db, 'groups', currentGroupId), {
             gameStatus: 'summary'
         });
