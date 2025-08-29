@@ -445,6 +445,17 @@ function showSummaryScreen(groupData) {
         }
         summaryContainer.appendChild(roundCard);
     });
+
+    // Add a button to show statistics
+    const statsBtn = document.createElement('button');
+    statsBtn.textContent = 'عرض الإحصائيات';
+    statsBtn.classList.add('btn', 'bg-purple-500', 'hover:bg-purple-600', 'text-white', 'py-2', 'px-4', 'rounded-full', 'mt-4');
+    statsBtn.addEventListener('click', () => {
+        updateDoc(doc(db, 'groups', currentGroupId), {
+            gameStatus: 'statistics'
+        });
+    });
+    summaryContainer.appendChild(statsBtn);
 }
 
 // Function to display player statistics screen
