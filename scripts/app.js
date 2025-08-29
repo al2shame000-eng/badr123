@@ -574,8 +574,17 @@ async function login() {
     }
     showLoading('login-btn', 'login-spinner');
     try {
-        await signInWithEmailAndPassword(auth, email, password);
-        // تم إضافة هذا السطر لعرض الشاشة الرئيسية مباشرة بعد تسجيل الدخول
+        const userCredential = await signInWithEmailAndPassword(auth, email, password);
+        const user = userCredential.user;
+        
+        // Check if user document exists, create it if not (for old accounts)
+        const userRef = doc(db, `users`, user.uid);
+        const userSnap = await getDoc(userRef);
+        if (!userSnap.exists()) {
+            const username = user.displayName || user.email.split('@')[0];
+            await setDoc(userRef, { username: username, points: 0, uid: user.uid });
+        }
+
         showScreen('main-menu-screen');
         hideLoading('login-btn', 'login-spinner');
     } catch (error) {
