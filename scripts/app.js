@@ -254,7 +254,8 @@ function handleGameStateChange() {
                 showScreen('ask-screen');
                 startTimer('ask-timer', () => submitQuestion('auto'));
             } else {
-                document.getElementById('waiting-player-name').textContent = 'شخص ما يطرح السؤال';
+                const currentPlayerName = groupData.players.find(p => p.id === groupData.currentPlayerId)?.name;
+                document.getElementById('waiting-player-name').textContent = currentPlayerName || 'لاعب غير معروف';
                 showScreen('waiting-screen');
             }
             break;
@@ -300,6 +301,7 @@ function showVotingScreen(groupData) {
         const button = document.createElement('button');
         button.textContent = player.name;
         button.classList.add('answer-btn');
+        button.setAttribute('data-player-id', player.id); // Add data attribute to identify the player
         button.addEventListener('click', () => submitVote(player.id));
         votingContainer.appendChild(button);
     });
@@ -309,12 +311,15 @@ function showVotingScreen(groupData) {
     if (myPlayer && myPlayer.hasVoted) {
         document.getElementById('vote-status').textContent = 'لقد قمت بالتصويت بالفعل في هذه الجولة.';
         const allVotingButtons = document.getElementById('voting-container').querySelectorAll('.answer-btn');
-        allVotingButtons.forEach(btn => {
-            btn.disabled = true;
-            if (btn.textContent === myPlayer.name) {
-                btn.classList.add('voted-btn');
+        allVotingButtons.forEach(btn => btn.disabled = true);
+
+        // This is the new logic to highlight the button of the person voted for
+        if(myPlayer.votedForId) {
+            const votedForButton = document.querySelector(`[data-player-id="${myPlayer.votedForId}"]`);
+            if(votedForButton) {
+                votedForButton.classList.add('voted-btn');
             }
-        });
+        }
     } else {
         document.getElementById('vote-status').textContent = "";
         const allVotingButtons = document.getElementById('voting-container').querySelectorAll('.answer-btn');
@@ -341,7 +346,8 @@ async function submitVote(playerId) {
         
         const playersUpdated = currentGroupData.players.map(p => {
             if (p.id === user.uid) {
-                return { ...p, hasVoted: true };
+                // Add the new field to store who the user voted for
+                return { ...p, hasVoted: true, votedForId: playerId };
             }
             return p;
         });
@@ -420,53 +426,26 @@ function showStatisticsScreen(groupData) {
     showScreen('statistics-screen');
     const statisticsContainer = document.getElementById('statistics-container');
     statisticsContainer.innerHTML = '';
-    
-    // Check if there is roundsData to display
-    if (!groupData.roundsData || groupData.roundsData.length === 0) {
-        const noStatsMessage = document.createElement('p');
-        noStatsMessage.classList.add('text-center', 'text-gray-500');
-        noStatsMessage.textContent = 'لا توجد إحصائيات لعرضها حتى الآن.';
-        statisticsContainer.appendChild(noStatsMessage);
-        return;
-    }
-    
-    groupData.roundsData.forEach((round, index) => {
-        const statCard = document.createElement('div');
-        statCard.classList.add('statistics-card', 'p-4', 'bg-gray-100', 'rounded-lg', 'shadow-md', 'mb-4');
-        
-        const roundTitle = document.createElement('h3');
-        roundTitle.classList.add('text-lg', 'font-bold', 'text-blue-600', 'mb-2');
-        roundTitle.textContent = `الجولة ${index + 1}`;
-        statCard.appendChild(roundTitle);
-        
-        const questionText = document.createElement('p');
-        questionText.classList.add('font-semibold', 'text-gray-800', 'mb-2');
-        questionText.textContent = `السؤال: ${round.question}`;
-        statCard.appendChild(questionText);
-        
+    const playerStats = {};
+    groupData.players.forEach(player => {
+        playerStats[player.id] = { name: player.name, totalVotes: 0 };
+    });
+    groupData.roundsData.forEach(round => {
         const votes = round.votes;
-        const sortedPlayers = Object.keys(votes).sort((a, b) => votes[b] - votes[a]);
-        
-        if (sortedPlayers.length > 0) {
-            const winnerId = sortedPlayers[0];
-            const winnerName = groupData.players.find(p => p.id === winnerId)?.name || 'غير معروف';
-            const winnerVotes = votes[winnerId];
-            
-            const winnerInfo = document.createElement('p');
-            winnerInfo.classList.add('text-md', 'text-green-600');
-            winnerInfo.textContent = `أكثر تصويت: ${winnerName} (${winnerVotes} صوت)`;
-            statCard.appendChild(winnerInfo);
-        } else {
-            const noVotesMessage = document.createElement('p');
-            noVotesMessage.classList.add('text-md', 'text-gray-500');
-            noVotesMessage.textContent = 'لم يتم التصويت في هذه الجولة.';
-            statCard.appendChild(noVotesMessage);
+        for (const playerId in votes) {
+            if (playerStats[playerId]) {
+                playerStats[playerId].totalVotes += votes[playerId];
+            }
         }
-        
+    });
+    const sortedPlayers = Object.values(playerStats).sort((a, b) => b.totalVotes - a.totalVotes);
+    sortedPlayers.forEach((player, index) => {
+        const statCard = document.createElement('div');
+        statCard.classList.add('statistics-card');
+        statCard.textContent = `${index + 1}. ${player.name}: ${player.totalVotes} صوت`;
         statisticsContainer.appendChild(statCard);
     });
 }
-
 
 // Function to start the next round or end the game
 async function startNextRoundOrEndGame() {
@@ -493,7 +472,7 @@ async function startNextRoundOrEndGame() {
             currentVotes: {},
             currentPlayerIndex: currentPlayerIndex,
             currentRound: currentRound,
-            players: groupData.players.map(p => ({ ...p, hasVoted: false }))
+            players: groupData.players.map(p => ({ ...p, hasVoted: false, votedForId: null }))
         });
     }
 }
