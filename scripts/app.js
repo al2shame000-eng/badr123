@@ -272,15 +272,14 @@ function handleGameStateChange() {
                 showScreen('ask-screen');
                 startTimer('ask-timer', () => submitQuestion('auto'));
             } else {
-                const currentPlayerName = groupData.players.find(p => p.id === groupData.currentPlayerId)?.name;
-                document.getElementById('waiting-player-name').textContent = currentPlayerName || 'لاعب غير معروف';
+                document.getElementById('waiting-player-name').textContent = 'انتظر اللاعب الذي يطرح السؤال';
                 showScreen('waiting-screen');
             }
             break;
         case 'voting':
             document.getElementById('voting-round').textContent = groupData.currentRound;
             showVotingScreen(groupData);
-            startTimer('voting-timer', () => startNextRoundOrEndGame());
+            // Timer is removed from here
             break;
         case 'summary':
             showSummaryScreen(groupData);
@@ -378,6 +377,15 @@ async function submitVote(playerId) {
         document.getElementById('vote-status').textContent = 'تم تسجيل صوتك بنجاح!';
         const allVotingButtons = document.getElementById('voting-container').querySelectorAll('.answer-btn');
         allVotingButtons.forEach(btn => btn.disabled = true);
+
+        // Check if all players have voted
+        const updatedGroupSnap = await getDoc(groupRef);
+        const updatedGroupData = updatedGroupSnap.data();
+        const allPlayersVoted = updatedGroupData.players.every(p => p.hasVoted);
+
+        if (allPlayersVoted) {
+            startNextRoundOrEndGame();
+        }
     } catch (error) {
         console.error("Error submitting vote:", error);
         document.getElementById('vote-status').textContent = 'فشل تسجيل الصوت. حاول مرة أخرى.';
