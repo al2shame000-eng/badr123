@@ -172,9 +172,19 @@ async function startGame() {
 }
 
 // Function to update the UI based on the game state in Firestore
+let previousPlayers = null;
 function handleGameStateChange() {
     const user = auth.currentUser;
     if (!user || !currentGroupId || !currentGroupData) return;
+    
+    // Check for players leaving
+    if (previousPlayers && currentGroupData.players.length < previousPlayers.length) {
+        const leftPlayer = previousPlayers.find(p => !currentGroupData.players.some(np => np.id === p.id));
+        if (leftPlayer) {
+            showMessage('status-message', `اللاعب ${leftPlayer.name} غادر المجموعة.`, 'status');
+        }
+    }
+    previousPlayers = currentGroupData.players;
 
     const groupData = currentGroupData;
     const startGameBtn = document.getElementById('start-game-btn');
@@ -182,6 +192,14 @@ function handleGameStateChange() {
     const creatorMessage = document.getElementById('creator-message');
     const playerCountSpan = document.getElementById('player-count');
 
+    // End game if less than 3 players
+    if (groupData.gameStatus !== 'waiting' && groupData.players.length < 3) {
+        updateDoc(doc(db, 'groups', currentGroupId), {
+            gameStatus: 'summary'
+        });
+        return;
+    }
+    
     // Show/hide start button based on creator ID
     if (groupData.creatorId === user.uid) {
         startGameBtn.classList.remove('hidden');
@@ -446,6 +464,7 @@ function showStatisticsScreen(groupData) {
         statisticsContainer.appendChild(statCard);
     });
 }
+
 
 // Function to start the next round or end the game
 async function startNextRoundOrEndGame() {
