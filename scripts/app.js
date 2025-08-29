@@ -1,6 +1,6 @@
 // Firebase SDKs
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, updateProfile } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 import { getFirestore, doc, setDoc, getDoc, updateDoc, collection, onSnapshot, getDocs, query, where, arrayUnion, deleteDoc, arrayRemove } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
 // Firebase configuration
@@ -421,26 +421,53 @@ function showStatisticsScreen(groupData) {
     showScreen('statistics-screen');
     const statisticsContainer = document.getElementById('statistics-container');
     statisticsContainer.innerHTML = '';
-    const playerStats = {};
-    groupData.players.forEach(player => {
-        playerStats[player.id] = { name: player.name, totalVotes: 0 };
-    });
-    groupData.roundsData.forEach(round => {
-        const votes = round.votes;
-        for (const playerId in votes) {
-            if (playerStats[playerId]) {
-                playerStats[playerId].totalVotes += votes[playerId];
-            }
-        }
-    });
-    const sortedPlayers = Object.values(playerStats).sort((a, b) => b.totalVotes - a.totalVotes);
-    sortedPlayers.forEach((player, index) => {
+    
+    // Check if there is roundsData to display
+    if (!groupData.roundsData || groupData.roundsData.length === 0) {
+        const noStatsMessage = document.createElement('p');
+        noStatsMessage.classList.add('text-center', 'text-gray-500');
+        noStatsMessage.textContent = 'لا توجد إحصائيات لعرضها حتى الآن.';
+        statisticsContainer.appendChild(noStatsMessage);
+        return;
+    }
+    
+    groupData.roundsData.forEach((round, index) => {
         const statCard = document.createElement('div');
-        statCard.classList.add('statistics-card');
-        statCard.textContent = `${index + 1}. ${player.name}: ${player.totalVotes} صوت`;
+        statCard.classList.add('statistics-card', 'p-4', 'bg-gray-100', 'rounded-lg', 'shadow-md', 'mb-4');
+        
+        const roundTitle = document.createElement('h3');
+        roundTitle.classList.add('text-lg', 'font-bold', 'text-blue-600', 'mb-2');
+        roundTitle.textContent = `الجولة ${index + 1}`;
+        statCard.appendChild(roundTitle);
+        
+        const questionText = document.createElement('p');
+        questionText.classList.add('font-semibold', 'text-gray-800', 'mb-2');
+        questionText.textContent = `السؤال: ${round.question}`;
+        statCard.appendChild(questionText);
+        
+        const votes = round.votes;
+        const sortedPlayers = Object.keys(votes).sort((a, b) => votes[b] - votes[a]);
+        
+        if (sortedPlayers.length > 0) {
+            const winnerId = sortedPlayers[0];
+            const winnerName = groupData.players.find(p => p.id === winnerId)?.name || 'غير معروف';
+            const winnerVotes = votes[winnerId];
+            
+            const winnerInfo = document.createElement('p');
+            winnerInfo.classList.add('text-md', 'text-green-600');
+            winnerInfo.textContent = `أكثر تصويت: ${winnerName} (${winnerVotes} صوت)`;
+            statCard.appendChild(winnerInfo);
+        } else {
+            const noVotesMessage = document.createElement('p');
+            noVotesMessage.classList.add('text-md', 'text-gray-500');
+            noVotesMessage.textContent = 'لم يتم التصويت في هذه الجولة.';
+            statCard.appendChild(noVotesMessage);
+        }
+        
         statisticsContainer.appendChild(statCard);
     });
 }
+
 
 // Function to start the next round or end the game
 async function startNextRoundOrEndGame() {
@@ -529,11 +556,9 @@ async function signup() {
     try {
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
         const user = userCredential.user;
-        await updateProfile(user, { displayName: username });
         const userRef = doc(db, `users`, user.uid);
         await setDoc(userRef, { username: username, points: 0, uid: user.uid });
         hideLoading('signup-btn', 'signup-spinner');
-        showScreen('main-menu-screen');
     } catch (error) {
         console.error("Error signing up:", error);
         showMessage('error-message', `فشل إنشاء الحساب: ${error.message}`, 'error');
@@ -562,10 +587,6 @@ async function login() {
 }
 
 async function logout() {
-    const user = auth.currentUser;
-    if (user) {
-        await updateDoc(doc(db, `users`, user.uid), { currentGroupId: null });
-    }
     await signOut(auth);
     showScreen('auth-screen');
 }
@@ -602,8 +623,8 @@ async function createGroup() {
 
         currentGroupId = groupCode;
         startGroupListener(currentGroupId);
-        await updateDoc(userRef, { currentGroupId: groupCode });
         
+        // Update the UI directly after creating the group
         document.getElementById('group-name').textContent = groupName;
         document.getElementById('group-code').textContent = groupCode;
         showScreen('group-details-screen');
@@ -650,7 +671,7 @@ async function joinGroup() {
         if (groupData.players.some(p => p.id === user.uid)) {
             currentGroupId = groupCode;
             startGroupListener(currentGroupId);
-            await updateDoc(doc(db, `users`, user.uid), { currentGroupId: groupCode });
+            // Update the UI directly when rejoining a group
             document.getElementById('group-name').textContent = groupData.groupName;
             document.getElementById('group-code').textContent = groupCode;
             showScreen('group-details-screen');
@@ -665,11 +686,11 @@ async function joinGroup() {
         await updateDoc(groupRef, {
             players: arrayUnion({ id: user.uid, name: username, score: 0 })
         });
-        
+
         currentGroupId = groupCode;
         startGroupListener(currentGroupId);
-        await updateDoc(doc(db, `users`, user.uid), { currentGroupId: groupCode });
-
+        
+        // Update the UI directly after joining a group
         document.getElementById('group-name').textContent = groupData.groupName;
         document.getElementById('group-code').textContent = groupCode;
         showScreen('group-details-screen');
@@ -966,26 +987,10 @@ if (game1WinBoxCloseBtn) {
   });
 }
 
-auth.onAuthStateChanged(async user => {
+auth.onAuthStateChanged(user => {
     if (user) {
-        const userRef = doc(db, `users`, user.uid);
-        const userSnap = await getDoc(userRef);
-        if (userSnap.exists() && userSnap.data().currentGroupId) {
-            currentGroupId = userSnap.data().currentGroupId;
-            // تأكد من وجود الجروب قبل الدخول إليه
-            const groupRef = doc(db, `groups`, currentGroupId);
-            const groupSnap = await getDoc(groupRef);
-            if(groupSnap.exists()){
-                document.getElementById('group-name').textContent = groupSnap.data().groupName;
-                document.getElementById('group-code').textContent = currentGroupId;
-                showScreen('group-details-screen');
-                startGroupListener(currentGroupId);
-            } else {
-                showScreen('main-menu-screen');
-            }
-        } else {
-            showScreen('main-menu-screen');
-        }
+        showScreen('main-menu-screen');
+        // Initial profile data load
         updateProfileScreen();
     } else {
         showScreen('auth-screen');
