@@ -463,25 +463,44 @@ function showStatisticsScreen(groupData) {
     showScreen('statistics-screen');
     const statisticsContainer = document.getElementById('statistics-container');
     statisticsContainer.innerHTML = '';
-    const playerStats = {};
-    groupData.players.forEach(player => {
-        playerStats[player.id] = { name: player.name, totalVotes: 0 };
-    });
-    groupData.roundsData.forEach(round => {
+    
+    // Iterate through each round's data
+    groupData.roundsData.forEach((round, index) => {
+        const roundCard = document.createElement('div');
+        roundCard.classList.add('statistics-card', 'mb-4', 'p-4', 'border', 'rounded-lg', 'bg-gray-100');
+        
+        const questionP = document.createElement('p');
+        questionP.classList.add('font-semibold', 'text-gray-800');
+        questionP.textContent = `السؤال ${index + 1}: ${round.question}`;
+        roundCard.appendChild(questionP);
+        
         const votes = round.votes;
-        for (const playerId in votes) {
-            if (playerStats[playerId]) {
-                playerStats[playerId].totalVotes += votes[playerId];
-            }
+        const sortedPlayers = Object.keys(votes).sort((a, b) => votes[b] - votes[a]);
+        
+        if (sortedPlayers.length > 0) {
+            const winnerId = sortedPlayers[0];
+            const winnerName = groupData.players.find(p => p.id === winnerId)?.name || 'غير معروف';
+            const winnerVotes = votes[winnerId];
+            
+            const winnerP = document.createElement('p');
+            winnerP.classList.add('text-md', 'text-blue-600', 'mt-1');
+            winnerP.textContent = `الخيار الأكثر تصويتاً: ${winnerName} (${winnerVotes} صوت)`;
+            roundCard.appendChild(winnerP);
         }
+        
+        statisticsContainer.appendChild(roundCard);
     });
-    const sortedPlayers = Object.values(playerStats).sort((a, b) => b.totalVotes - a.totalVotes);
-    sortedPlayers.forEach((player, index) => {
-        const statCard = document.createElement('div');
-        statCard.classList.add('statistics-card');
-        statCard.textContent = `${index + 1}. ${player.name}: ${player.totalVotes} صوت`;
-        statisticsContainer.appendChild(statCard);
+
+    // Add a button to go back to the summary screen
+    const backBtn = document.createElement('button');
+    backBtn.textContent = 'العودة إلى الملخص';
+    backBtn.classList.add('btn', 'bg-blue-500', 'hover:bg-blue-600', 'text-white', 'py-2', 'px-4', 'rounded-full', 'mt-4');
+    backBtn.addEventListener('click', () => {
+        updateDoc(doc(db, 'groups', currentGroupId), {
+            gameStatus: 'summary'
+        });
     });
+    statisticsContainer.appendChild(backBtn);
 }
 
 
