@@ -771,9 +771,40 @@ async function leaveGroup() {
         const groupRef = doc(db, `groups`, currentGroupId);
         const playerToRemove = currentGroupData.players.find(p => p.id === user.uid);
         if (playerToRemove) {
+            // Remove player from the players array
             await updateDoc(groupRef, {
                 players: arrayRemove(playerToRemove)
             });
+
+            // Update the game state if the leaving player was the current player
+            const updatedGroupSnap = await getDoc(groupRef);
+            const updatedGroupData = updatedGroupSnap.data();
+
+            if (updatedGroupData.gameStatus !== 'pre-game' && updatedGroupData.currentPlayerId === user.uid) {
+                let nextPlayerIndex = (updatedGroupData.currentPlayerIndex + 1) % updatedGroupData.playersOrder.length;
+                let nextPlayerId = updatedGroupData.playersOrder[nextPlayerIndex];
+
+                // If the player who left was the last one in the order, loop back to the first
+                // Also, handle the case where the player is leaving and there are no other players
+                if (nextPlayerId === user.uid) {
+                    nextPlayerId = updatedGroupData.playersOrder[0] || null;
+                    if (updatedGroupData.playersOrder.length === 1) { // If only one player left, end the game
+                        await updateDoc(groupRef, {
+                            gameStatus: 'summary'
+                        });
+                    }
+                }
+                
+                await updateDoc(groupRef, {
+                    currentPlayerId: nextPlayerId,
+                    currentPlayerIndex: nextPlayerIndex
+                });
+            }
+            // Also remove the player from the playersOrder array to prevent errors
+            await updateDoc(groupRef, {
+                playersOrder: arrayRemove(user.uid)
+            });
+
             currentGroupId = null;
             if (unsubscribeGroupListener) {
                 unsubscribeGroupListener();
